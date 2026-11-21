@@ -1,0 +1,84 @@
+### Day 7 - API smoke tests (VS Code REST Client / IntelliJ HTTP client)
+@host = http://localhost:8080/api
+
+### 1. Login as demo manager
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "manager@bugtracker.com", "password": "Manager@123" }
+
+###
+@token = {{login.response.body.token}}
+
+### 2. Create a project (ADMIN / MANAGER only)
+POST {{host}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Website", "projectKey": "WEB", "description": "Company website" }
+
+### 3. List projects
+GET {{host}}/projects
+Authorization: Bearer {{token}}
+
+### 4. Add a team member (project 2, user 3)
+POST {{host}}/projects/1/members/4
+Authorization: Bearer {{token}}
+
+### 5. Create an issue
+POST {{host}}/projects/1/issues
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "title": "Footer link broken", "description": "404 on /about", "type": "BUG", "priority": "HIGH", "assigneeId": 3 }
+
+### 6. Filter + search
+GET {{host}}/projects/1/issues?status=TODO&priority=HIGH&q=login
+Authorization: Bearer {{token}}
+
+### 7. Move on the Kanban board
+PATCH {{host}}/issues/1/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "IN_PROGRESS" }
+
+### 8. Assign
+PATCH {{host}}/issues/1/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "assigneeId": 4 }
+
+### 9. Comment
+POST {{host}}/issues/1/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "content": "Looking into this now." }
+
+### 10. Edit / delete
+PUT {{host}}/issues/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "title": "Login page throws 500 on empty password", "description": "updated", "status": "IN_PROGRESS", "priority": "CRITICAL", "type": "BUG", "assigneeId": 3 }
+
+###
+DELETE {{host}}/issues/5
+Authorization: Bearer {{token}}
+
+### 11. Role check - developer cannot create a project (expects 403)
+# @name devLogin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "dev@bugtracker.com", "password": "Dev@1234" }
+
+###
+POST {{host}}/projects
+Authorization: Bearer {{devLogin.response.body.token}}
+Content-Type: application/json
+
+{ "name": "Nope", "projectKey": "NOPE" }
